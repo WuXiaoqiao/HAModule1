@@ -55,6 +55,7 @@ Wlan SSID und Passwort werden in der  HAModule1/main/include/Common.h konifgurie
 #define PASS_MACRO "YourNetWorkpassword"
 
 Einfach hier die beiden Strings ändern.
+Danach kann mit dem CMD-Line git update-index --assume-unchanged Common.h das File vom push rausgenommen werden.
 
 ## Konfiguration der Schalter
 
