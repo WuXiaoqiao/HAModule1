@@ -36,7 +36,8 @@ void Kanal::Init() {
 	pinMode(out, OUTPUT);
 	digitalWrite(out, state);
 	pinMode(in, INPUT_PULLUP);
-	ESP_LOGI(TAG, "INIT GPIO OUT: %d, Schalter: %d", out, state);
+	ESP_LOGI(TAG, "GPIO OUT: %d, Schalter: %d\n", out, state);
+	ESP_LOGI(TAG, "GPIO IN: %d, state: %d\n", in, digitalRead(in));
 	lastChangeTime = hmMillis();
 }
 
@@ -424,7 +425,7 @@ void RolloSchalter::ProcessCommand(std::string cmd, WiFiClient& client) {
 bool RolloSchalter::Putinfo(char* buffer, int Size) {
 	int64_t auf = (SchalterAuf.autoOn - hmMillis()) / 1000;
 	int64_t zu = (SchalterAb.autoOn - hmMillis()) / 1000;
-	sprintf(buffer,
+	snprintf(buffer,Size,
 			"<th>%s</th><td>auto up in %02lld:%02lld:%02lld sek </td><td>auto down in %02lld:%02lld:%02lld sek </td></tr>",
 			bezeichnung.c_str(), auf / 3600, (auf / 60) % 60, auf % 60,
 			zu / 3600, (zu / 60) % 60, zu % 60);

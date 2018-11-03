@@ -38,6 +38,7 @@ WiFiServer server(80);
 // connect to UDP returns true if successful or false if not
 void ws_server(void *pvParameters);
 bool inited = false;
+bool TIME_OBTAINED =false;
 int64_t lastCheck;
 WetterDaten daten;
 String requestHost;
@@ -52,7 +53,7 @@ void setup() {
 	ESP_LOGI(TAG, "%d", chipidLow);
 	Raum* raum;
 
-	if ((chipidLow == 15363) || (chipidLow == 21614)) { // module 1
+	if ((chipidLow == 15363) || (chipidLow == 21614) || (chipidLow == 27787)) { // module 1
 		ESP_LOGI(TAG, "module 1 init");
 		raum = new Raum("Zimmer Jayde");
 		vecRaum.push_back(raum);
@@ -92,7 +93,8 @@ void setup() {
 	for (auto itr : vecRaum) {
 		itr->Init();
 	}
-
+	//int readin = digitalRead(23);
+	//ESP_LOGI(TAG, "GPIO IN: %d, state: %d\n", 23, readin);
 	ESP_LOGI(TAG, "Connecting to ");ESP_LOGI(TAG, "ESP_HWID %llu", ESP.getEfuseMac());
 	//WiFi.onEvent(WiFiGotIP, WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
 	WiFi.begin(ssid, pass);
@@ -100,9 +102,7 @@ void setup() {
 	 connectUDP();
 	 }*/
 	//LogCrashDump();
-	for (auto itr : vecRaum) {
-		itr->Init();
-	}ESP_LOGI(TAG, "Start Server");
+	ESP_LOGI(TAG, "Start Server");
 	//Create Websocket Server Task
 	xTaskCreatePinnedToCore(ws_server, "ws_server", 4096, NULL, 2, NULL, 1);
 	lastCheck = hmMillis();
@@ -116,16 +116,11 @@ void loop() {
 		lastCheck = hmMillis();
 	}
 	if (WiFi.status() == WL_CONNECTED) {
-		if (!inited) {
+		if (!TIME_OBTAINED) {
 			obtain_time();
+			TIME_OBTAINED = true;
 		}
 		daten.Check();
-		if (!inited) {
-			for (auto itr : vecRaum) {
-				itr->Init();
-			}
-			inited = true;
-		}
 	}
 	for (auto itrRaum : vecRaum) {
 		for (auto itr : itrRaum->vecSchaltern) {
@@ -159,25 +154,25 @@ void PutOperations(WiFiClient& client) {
 void PutInfo(WiFiClient& client) {
 	client.print(TOSTRING(HTML_INFO));
 	client.print("<table>");
-	char buffer[100];
-	sprintf(buffer, "<tr><th>Sonnenaufgang</th><td>%02d:%02d</td>",
+	char buffer[500];
+	snprintf(buffer, 500, "<tr><th>Sonnenaufgang</th><td>%02d:%02d</td>",
 			(daten.SonnenAufGangSek / 3600),
 			(daten.SonnenAufGangSek % 3600) / 60);
 	client.print(buffer);
-	sprintf(buffer, "<th>Sonnenuntergang</th><td>%02d:%02d</td></tr>",
+	snprintf(buffer, 500, "<th>Sonnenuntergang</th><td>%02d:%02d</td></tr>",
 			(daten.SonnenUnterGangSek / 3600),
 			(daten.SonnenUnterGangSek % 3600) / 60);
 	client.print(buffer);
-	sprintf(buffer, "<tr><th>Windgeschwindigkeit</th><td>%d</td>",
+	snprintf(buffer, 500, "<tr><th>Windgeschwindigkeit</th><td>%d</td>",
 			(daten.WindGeschwindigkeit));
 	client.print(buffer);
-	sprintf(buffer, "<th>Windgeschwindigkeit Max</th><td>%d</td></tr>",
+	snprintf(buffer, 500, "<th>Windgeschwindigkeit Max</th><td>%d</td></tr>",
 			(daten.WindGeschwindigkeitMax));
 	client.print(buffer);
 	time_t now = hmMillis() / 1000;
 	struct tm* ti = gmtime(&now);
 	client.print("");
-	sprintf(buffer,
+	snprintf(buffer, 500,
 			"<th>Time since restart</th><td>%d Tage %02d:%02d:%02d</td>",
 			ti->tm_yday, ti->tm_hour, ti->tm_min, ti->tm_sec);
 	client.print(buffer);
@@ -262,8 +257,8 @@ void ws_server(void *pvParameters) {
 									ip2 = "localhost:104";
 								}
 
-								sprintf(buffer, TOSTRING(HTML_HEAD_CENTER), ip1.c_str(),
-										ip2.c_str());
+								sprintf(buffer, TOSTRING(HTML_HEAD_CENTER),
+										ip1.c_str(), ip2.c_str());
 
 								client.print(buffer);
 								client.print(TOSTRING(HTML_HEAD_BOTTOM));
@@ -337,7 +332,8 @@ void ws_server(void *pvParameters) {
 								ESP_LOGI(TAG, " ProcessCommand: \"%s\"",
 										currentLine.c_str());
 								pSchalter->ProcessCommand(
-										std::string(currentLine.c_str()), client);
+										std::string(currentLine.c_str()),
+										client);
 								pSchalter = NULL;
 							}
 							currentLine = ""; // add it to the end of the currentLine
