@@ -160,7 +160,8 @@ void WetterDaten::GetDataWind() {
 		ESP_LOGI(TAG, "Waiting for response ");
 		int end = 25;
 		while (!client.available() && (end--)) {
-			delay(50);
+			vTaskDelay(50 / portTICK_PERIOD_MS);
+			ESP_LOGI(TAG, "feed watchdog");
 		}
 
 		String strStammersDorf = "Wien Stammersdorf";
@@ -217,10 +218,12 @@ void WetterDaten::GetDataSonne() {
 			ESP_LOGI(TAG, "headers received");
 			break;
 		}
+		vTaskDelay(50 / portTICK_PERIOD_MS);
+		ESP_LOGI(TAG, "feed watchdog");
 	}
 	char bufSearch[100];
 	struct tm timeinfo = Schalter::GetTime();
-	sprintf(bufSearch, "<td class=\"date\">%02d/%02d/%4d</td>",
+	snprintf(bufSearch,100, "<td class=\"date\">%02d/%02d/%4d</td>",
 			timeinfo.tm_mday, timeinfo.tm_mon + 1, timeinfo.tm_year + 1900);
 	ESP_LOGI(TAG, "search tag:%s", bufSearch);
 	ESP_LOGI(TAG, "reply was:");

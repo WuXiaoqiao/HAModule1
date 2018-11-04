@@ -57,14 +57,14 @@ public:
 			client.printf(
 					"<button onclick=\"execOperation('http://%s/%d/%s/')\">%s</button>",
 					requestHost.c_str(), (int) &(bezeichnung),
-					itrStr.first.c_str(), itrStr.second.c_str());
+					itrStr.first.c_str(), itrStr.second->c_str());
 		}
 	}
 	static int64_t GetNextAutoTime(uint8_t hour, uint8_t min, uint8_t sec);
 	virtual bool Putinfo(char* buffer, int Size) {
 		return false;
 	}
-	std::vector<std::pair<std::string, std::string>> operationen;
+	std::vector<std::pair<std::string, std::string *>> operationen;
 	std::string bezeichnung;
 };
 

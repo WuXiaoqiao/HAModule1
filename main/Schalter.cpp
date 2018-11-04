@@ -36,8 +36,8 @@ void Kanal::Init() {
 	pinMode(out, OUTPUT);
 	digitalWrite(out, state);
 	pinMode(in, INPUT_PULLUP);
-	ESP_LOGI(TAG, "GPIO OUT: %d, Schalter: %d\n", out, state);
-	ESP_LOGI(TAG, "GPIO IN: %d, state: %d\n", in, digitalRead(in));
+	ESP_LOGI(TAG, "GPIO OUT: %d, Schalter: %d", out, state);
+	ESP_LOGI(TAG, "GPIO IN: %d, state: %d", in, digitalRead(in));
 	lastChangeTime = hmMillis();
 }
 
@@ -68,8 +68,8 @@ int64_t Schalter::GetNextAutoTime(uint8_t hour, uint8_t min, uint8_t sec) {
 LichtSchalter::LichtSchalter(uint8_t in, uint8_t out, std::string bezeichnung) :
 		SchalterKanal(in, out) {
 	this->bezeichnung = bezeichnung;
-	operationen.push_back(std::make_pair("an", TOSTRING(LIGHT_ON)));
-	operationen.push_back(std::make_pair("aus", TOSTRING(LIGHT_OFF)));
+	operationen.push_back(std::make_pair("an", new std::string(TOSTRING(LIGHT_ON))));
+	operationen.push_back(std::make_pair("aus", new std::string(TOSTRING(LIGHT_OFF))));
 }
 
 LichtSchalter::~LichtSchalter() {
@@ -224,10 +224,16 @@ RolloSchalter::RolloSchalter(uint8_t inAuf, uint8_t outAuf, uint8_t inAb,
 		uint8_t outAb, std::string bezeichnung) :
 		SchalterAuf(inAuf, outAuf), SchalterAb(inAb, outAb), autoCheck(0) {
 	this->bezeichnung = bezeichnung;
-	operationen.push_back(std::make_pair("ganz_auf", TOSTRING(ARROW_FULL_UP)));
-	operationen.push_back(std::make_pair("ganz_zu", TOSTRING(ARROW_FULL_DOWN)));
-	operationen.push_back(std::make_pair("auf", TOSTRING(ARROW_UP)));
-	operationen.push_back(std::make_pair("zu", TOSTRING(ARROW_DOWN)));
+	char buffer[512];
+	char anfangBuchstabe = bezeichnung[0];
+	snprintf(buffer, 512, TOSTRING(ARROW_FULL_UP), anfangBuchstabe);
+	operationen.push_back(std::make_pair("ganz_auf", new std::string(buffer)));
+	snprintf(buffer, 512, TOSTRING(ARROW_FULL_DOWN), anfangBuchstabe);
+	operationen.push_back(std::make_pair("ganz_zu", new std::string(buffer)));
+	snprintf(buffer, 512, TOSTRING(ARROW_UP), anfangBuchstabe);
+	operationen.push_back(std::make_pair("auf", new std::string(buffer)));
+	snprintf(buffer, 512, TOSTRING(ARROW_DOWN), anfangBuchstabe);
+	operationen.push_back(std::make_pair("zu", new std::string(buffer)));
 }
 
 RolloSchalter::~RolloSchalter() {

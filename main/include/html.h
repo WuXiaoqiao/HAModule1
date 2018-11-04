@@ -171,11 +171,11 @@
 				</symbol>   \
 			</svg></body></html>
 
-
+#define ARROW_LABEL <text x="60" y="100" font-size="50" fill="black">%c</text>
 #define LIGHT_ON <svg width="150" height="150"><use xlink:href="#ligth_on" /></svg>
 #define LIGHT_OFF <svg width="150" height="150"><use xlink:href="#ligth_off" /></svg>
-#define ARROW_UP <svg width="150" height="150"><use xlink:href="#arrow_up" /></svg>
-#define ARROW_DOWN <svg width="150" height="150"><use xlink:href="#arrow_down" /></svg>
-#define ARROW_FULL_UP <svg width="150" height="150"><use xlink:href="#arrow_full_up" /></svg>
-#define ARROW_FULL_DOWN <svg width="150" height="150"><use xlink:href="#arrow_full_down" /></svg>
+#define ARROW_UP <svg width="150" height="150"><use xlink:href="#arrow_up" />ARROW_LABEL</svg>
+#define ARROW_DOWN <svg width="150" height="150"><use xlink:href="#arrow_down" />ARROW_LABEL</svg>
+#define ARROW_FULL_UP <svg width="150" height="150"><use xlink:href="#arrow_full_up" />ARROW_LABEL</svg>
+#define ARROW_FULL_DOWN <svg width="150" height="150"><use xlink:href="#arrow_full_down" />ARROW_LABEL</svg>
 #endif /* HTML_H_ */

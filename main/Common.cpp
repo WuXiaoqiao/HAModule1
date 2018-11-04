@@ -103,8 +103,8 @@ void obtain_time()
 	char strftime_buf[64];
     // Set timezone to Eastern Standard Time and print local time
 
-    setenv("TZ", "UTC-1:00", 1);
-	//setenv("TZ", "UTC-1DST-2", 1);
+    //setenv("TZ", "UTC-1:00", 1);
+	setenv("TZ", "UTC-1DST-2,M3.5.0/-2,M10.5.0/-1", 1);
     tzset();
     localtime_r(&now, &timeinfo);
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
