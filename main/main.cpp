@@ -67,7 +67,7 @@ void setup() {
 		raum = new Raum("Elternzimmer");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(33, 5, "EZ"));
-		raum->vecSchaltern.push_back(new RolloSchalter(23, 19, 32, 18, "EZ"));
+		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 32, 18, "EZ"));
 	}					   //4610366690621131300 247728676
 
 	if ((chipidLow == 20500)) { // module 2
