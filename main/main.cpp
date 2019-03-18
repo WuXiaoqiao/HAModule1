@@ -53,7 +53,7 @@ void setup() {
 	ESP_LOGI(TAG, "%d", chipidLow);
 	Raum* raum;
 
-	if ((chipidLow == 15363) || (chipidLow == 21614) || (chipidLow == 27787)) { // module 1
+	if ((chipidLow == 15363) || (chipidLow == 27787)) { // module 1
 		ESP_LOGI(TAG, "module 1 init");
 		raum = new Raum("Zimmer Jayde");
 		vecRaum.push_back(raum);
@@ -85,6 +85,15 @@ void setup() {
 		raum->vecSchaltern.push_back(new AutoLichtSchalter(32, 18, "Gang"));
 		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 23, 21, "Gang"));
 	}
+	if ((chipidLow == 21614)) { // module 3
+			ESP_LOGI(TAG, "module3 init");
+			raum = new Raum("Haupteingang");
+			vecRaum.push_back(raum);
+			raum->vecSchaltern.push_back(new TasterSchalter(13, 4, "Tür"));
+			raum = new Raum("Wohnung");
+			vecRaum.push_back(raum);
+			raum->vecSchaltern.push_back(new LichtSchalter(13, 15, "Tür"));
+		}
 	raum = new Raum("Global");
 	pGlobalSchalter = new GlobalSchalter();
 	raum->vecSchaltern.push_back(pGlobalSchalter);
@@ -120,7 +129,7 @@ void loop() {
 			obtain_time();
 			TIME_OBTAINED = true;
 		}
-		daten.Check();
+		//daten.Check();
 	}
 	for (auto itrRaum : vecRaum) {
 		for (auto itr : itrRaum->vecSchaltern) {
@@ -249,21 +258,23 @@ void ws_server(void *pvParameters) {
 								ESP_LOGI(TAG, "Write Response");
 								client.print(TOSTRING(RESPONSE_HEADER));
 								client.print(TOSTRING(HTML_HEAD_TOP));
-								char buffer[512];
+								char buffer[1024];
 								std::string ip1 = "192.168.0.103";
 								std::string ip2 = "192.168.0.104";
+								std::string ip3 = "192.168.0.105";
 								if (!directIP) {
 									ip1 = "localhost:103";
 									ip2 = "localhost:104";
+									ip3 = "localhost:105";
 								}
 
-								sprintf(buffer, TOSTRING(HTML_HEAD_CENTER),
+								snprintf(buffer,1024,TOSTRING(HTML_HEAD_CENTER),
 										ip1.c_str(), ip2.c_str());
 
 								client.print(buffer);
 								client.print(TOSTRING(HTML_HEAD_BOTTOM));
-								sprintf(buffer, TOSTRING(HTML_BODY),
-										ip1.c_str(), ip2.c_str());
+								snprintf(buffer,1024, TOSTRING(HTML_BODY),
+										ip1.c_str(), ip2.c_str(), ip3.c_str());
 
 								client.print(buffer);
 								PutInfo(client);

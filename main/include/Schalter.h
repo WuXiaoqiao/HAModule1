@@ -154,4 +154,12 @@ public:
 	}
 };
 
+class TasterSchalter: public LichtSchalter {
+public:
+	TasterSchalter(uint8_t in, uint8_t out, std::string bezeichnung);
+	virtual ~TasterSchalter();
+	void CheckIO();
+	void ProcessCommand(std::string cmd, WiFiClient& client);
+};
+
 #endif

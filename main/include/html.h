@@ -35,6 +35,16 @@
 			};\
 			xhttp.open("GET", "http://"+path+"/GET_OPERATIONS/", true);\
 			xhttp.send();\
+		}\
+		function tuerAufHaupt() {\
+			var xhttp = new XMLHttpRequest();\
+			xhttp.open("GET", "http://192.168.0.105/TUER_AUF_HAUPT/", true);\
+			xhttp.send();\
+		}\
+		function tuerAufWohnung() {\
+			var xhttp = new XMLHttpRequest();\
+			xhttp.open("GET", "http://192.168.0.105/TUER_AUF_WOHNUNG/", true);\
+			xhttp.send();\
 		}
 #define HTML_HEAD_CENTER	function GlobalOP(path) {\
 			var xhttp = new XMLHttpRequest();\
@@ -84,6 +94,7 @@
 				<button class="t1" onclick="GlobalOP('ganz_auf')">Rollos auf</button>\
 				<button class="t1" onclick="GlobalOP('an')">Licht an</button>\
 				<button class="t2" onclick="GlobalOP('aus')">Licht aus</button>\
+				<button class="t2" onclick="GetOperation('%s')">Tür Funktionen</button>\
 			</div>\
 			<div id = "innhalt">
 

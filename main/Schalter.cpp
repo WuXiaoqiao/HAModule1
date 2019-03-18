@@ -127,12 +127,16 @@ void LichtSchalter::an() {
 	SchalterKanal.state = LOW;
 	SchalterKanal.autoOff = LONG_LONG_MAX;
 	SchalterKanal.lastChangeTime = hmMillis();
+	ESP_LOGI(TAG, "Schalter an GPIO IN: %d, GPIO OUT: %d, Schalter: %s",
+					SchalterKanal.in, SchalterKanal.out, bezeichnung.c_str());
 	objStatus = Status::AN;
 }
 void LichtSchalter::aus() {
 	SchalterKanal.state = HIGH;
 	SchalterKanal.autoOff = LONG_LONG_MAX;
 	SchalterKanal.lastChangeTime = hmMillis();
+	ESP_LOGI(TAG, "Schalter aus GPIO IN: %d, GPIO OUT: %d, Schalter: %s",
+					SchalterKanal.in, SchalterKanal.out, bezeichnung.c_str());
 	objStatus = Status::AUS;
 }
 
@@ -497,3 +501,34 @@ void GlobalSchalter::aus() {
 		}
 	}
 }
+
+//Taster begin
+
+TasterSchalter::TasterSchalter(uint8_t in, uint8_t out,
+		std::string bezeichnung) :
+		LichtSchalter(in, out, bezeichnung) {
+}
+TasterSchalter::~TasterSchalter() {
+
+}
+void TasterSchalter::CheckIO() {
+	if (SchalterKanal.autoOff < hmMillis()) {
+		ESP_LOGI(TAG, "SchalterKanal autoOff firering %s", bezeichnung.c_str());
+		aus();
+	}
+}
+
+void TasterSchalter::ProcessCommand(std::string cmd, WiFiClient& client) {
+	if (cmd == "an") {
+		an();
+		SchalterKanal.autoOff = hmMillis() + (500);
+	}
+	if (cmd == "aus") {
+		aus();
+	}
+	client.print(TOSTRING(RESPONSE_HEADER));
+	PutOperations(client,requestHost);
+	client.println();
+	client.flush();
+}
+//Taster end
