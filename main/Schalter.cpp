@@ -15,8 +15,9 @@
 #include "html.h"
 
 #define TAG "Schalter"
-#define DEFAULTZUMACHZEIT daten.SonnenUnterGangSek/3600,(daten.SonnenUnterGangSek%3600)/60,0
-#define DEFAULTAUFMACHZEIT daten.SonnenAufGangSek/3600,(daten.SonnenAufGangSek%3600)/60,0
+
+#define DEFAULTZUMACHZEIT auto_runterfahren/3600,(auto_runterfahren%3600)/60,0
+#define DEFAULTAUFMACHZEIT this->auto_rauffahren/3600,(this->auto_rauffahren%3600)/60,0
 
 extern WetterDaten daten;
 extern std::vector<Raum*> vecRaum;
@@ -36,8 +37,7 @@ void Kanal::Init() {
 	pinMode(out, OUTPUT);
 	digitalWrite(out, state);
 	pinMode(in, INPUT_PULLUP);
-	ESP_LOGI(TAG, "GPIO OUT: %d, Schalter: %d", out, state);
-	ESP_LOGI(TAG, "GPIO IN: %d, state: %d", in, digitalRead(in));
+	ESP_LOGI(TAG, "GPIO OUT: %d, Schalter: %d", out, state);ESP_LOGI(TAG, "GPIO IN: %d, state: %d", in, digitalRead(in));
 	lastChangeTime = hmMillis();
 }
 
@@ -68,8 +68,10 @@ int64_t Schalter::GetNextAutoTime(uint8_t hour, uint8_t min, uint8_t sec) {
 LichtSchalter::LichtSchalter(uint8_t in, uint8_t out, std::string bezeichnung) :
 		SchalterKanal(in, out) {
 	this->bezeichnung = bezeichnung;
-	operationen.push_back(std::make_pair("an", new std::string(TOSTRING(LIGHT_ON))));
-	operationen.push_back(std::make_pair("aus", new std::string(TOSTRING(LIGHT_OFF))));
+	operationen.push_back(
+			std::make_pair("an", new std::string(TOSTRING(LIGHT_ON))));
+	operationen.push_back(
+			std::make_pair("aus", new std::string(TOSTRING(LIGHT_OFF))));
 }
 
 LichtSchalter::~LichtSchalter() {
@@ -128,7 +130,7 @@ void LichtSchalter::an() {
 	SchalterKanal.autoOff = LONG_LONG_MAX;
 	SchalterKanal.lastChangeTime = hmMillis();
 	ESP_LOGI(TAG, "Schalter an GPIO IN: %d, GPIO OUT: %d, Schalter: %s",
-					SchalterKanal.in, SchalterKanal.out, bezeichnung.c_str());
+			SchalterKanal.in, SchalterKanal.out, bezeichnung.c_str());
 	objStatus = Status::AN;
 }
 void LichtSchalter::aus() {
@@ -136,17 +138,18 @@ void LichtSchalter::aus() {
 	SchalterKanal.autoOff = LONG_LONG_MAX;
 	SchalterKanal.lastChangeTime = hmMillis();
 	ESP_LOGI(TAG, "Schalter aus GPIO IN: %d, GPIO OUT: %d, Schalter: %s",
-					SchalterKanal.in, SchalterKanal.out, bezeichnung.c_str());
+			SchalterKanal.in, SchalterKanal.out, bezeichnung.c_str());
 	objStatus = Status::AUS;
 }
 
-void LichtSchalter::PutOperations(WiFiClient& client,const String& requestHost){
-	if(SchalterKanal.state == HIGH){
+void LichtSchalter::PutOperations(WiFiClient& client,
+		const String& requestHost) {
+	if (SchalterKanal.state == HIGH) {
 		// the content of the HTTP response follows the header:
 		client.printf(
 				"<button onclick=\"execOperation('http://%s/%d/an/', this)\">%s</button>",
 				requestHost.c_str(), (int) &(bezeichnung), TOSTRING(LIGHT_OFF));
-	}else{
+	} else {
 		client.printf(
 				"<button onclick=\"execOperation('http://%s/%d/aus/', this)\">%s</button>",
 				requestHost.c_str(), (int) &(bezeichnung), TOSTRING(LIGHT_ON));
@@ -161,7 +164,7 @@ void LichtSchalter::ProcessCommand(std::string cmd, WiFiClient& client) {
 		aus();
 	}
 	client.print(TOSTRING(RESPONSE_HEADER));
-	PutOperations(client,requestHost);
+	PutOperations(client, requestHost);
 	client.println();
 	client.flush();
 }
@@ -216,16 +219,16 @@ void AutoLichtSchalter::ProcessCommand(std::string cmd, WiFiClient& client) {
 		aus();
 	}
 	client.print(TOSTRING(RESPONSE_HEADER));
-	PutOperations(client,requestHost);
+	PutOperations(client, requestHost);
 	client.println();
 	client.flush();
 }
 
-
 //autolichtschalter end
 //LichtSchalter end
 RolloSchalter::RolloSchalter(uint8_t inAuf, uint8_t outAuf, uint8_t inAb,
-		uint8_t outAb, std::string bezeichnung) :
+		uint8_t outAb, int auto_rauffahren, int auto_runterfahren,
+		std::string bezeichnung) :
 		SchalterAuf(inAuf, outAuf), SchalterAb(inAb, outAb), autoCheck(0) {
 	this->bezeichnung = bezeichnung;
 	char buffer[512];
@@ -238,6 +241,10 @@ RolloSchalter::RolloSchalter(uint8_t inAuf, uint8_t outAuf, uint8_t inAb,
 	operationen.push_back(std::make_pair("auf", new std::string(buffer)));
 	snprintf(buffer, 512, TOSTRING(ARROW_DOWN), anfangBuchstabe);
 	operationen.push_back(std::make_pair("zu", new std::string(buffer)));
+	this->auto_rauffahren = (auto_rauffahren / 100) * 3600
+			+ (auto_rauffahren % 100) * 60;
+	this->auto_runterfahren = (auto_runterfahren / 100) * 3600
+			+ (auto_rauffahren % 100) * 60;
 }
 
 RolloSchalter::~RolloSchalter() {
@@ -435,10 +442,12 @@ void RolloSchalter::ProcessCommand(std::string cmd, WiFiClient& client) {
 bool RolloSchalter::Putinfo(char* buffer, int Size) {
 	int64_t auf = (SchalterAuf.autoOn - hmMillis()) / 1000;
 	int64_t zu = (SchalterAb.autoOn - hmMillis()) / 1000;
-	snprintf(buffer,Size,
-			"<th>%s</th><td>auto up in %02lld:%02lld:%02lld sek </td><td>auto down in %02lld:%02lld:%02lld sek </td></tr>",
+	snprintf(buffer, Size,
+			"<tr><th>%s</th><td>auto up in %02lld:%02lld:%02lld sek </td><td>auto down in %02lld:%02lld:%02lld sek </td></tr><tr><th>%s</th><td>Auto auf Zeit: %02d:%02d </td><td>Auto down Zeit: %02d:%02d </td></tr>",
 			bezeichnung.c_str(), auf / 3600, (auf / 60) % 60, auf % 60,
-			zu / 3600, (zu / 60) % 60, zu % 60);
+			zu / 3600, (zu / 60) % 60, zu % 60, bezeichnung.c_str(),
+			auto_rauffahren / 3600, (auto_rauffahren / 60) % 60,
+			auto_runterfahren / 3600, (auto_runterfahren /60) % 60);
 	return true;
 }
 
@@ -504,8 +513,7 @@ void GlobalSchalter::aus() {
 
 //Taster begin
 
-TasterSchalter::TasterSchalter(uint8_t in, uint8_t out,
-		std::string bezeichnung) :
+TasterSchalter::TasterSchalter(uint8_t in, uint8_t out, std::string bezeichnung) :
 		LichtSchalter(in, out, bezeichnung) {
 }
 TasterSchalter::~TasterSchalter() {
@@ -527,7 +535,7 @@ void TasterSchalter::ProcessCommand(std::string cmd, WiFiClient& client) {
 		aus();
 	}
 	client.print(TOSTRING(RESPONSE_HEADER));
-	PutOperations(client,requestHost);
+	PutOperations(client, requestHost);
 	client.println();
 	client.flush();
 }

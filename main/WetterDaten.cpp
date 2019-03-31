@@ -98,7 +98,7 @@ void WetterDaten::setWindGeschwindigkeitError() {
 }
 
 void WetterDaten::setSonnenDatentError() {
-	SonnenAufGangSek = 7 * 60 * 60;
+	SonnenAufGangSek = 6 * 60 * 60;
 	SonnenUnterGangSek = ((18 * 60) + 30) * 60;
 	ESP_LOGE(TAG, "setSonnenDatentError");
 }

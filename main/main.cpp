@@ -59,15 +59,15 @@ void setup() {
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(13, 4, "Jayde"));
 		raum->vecSchaltern.push_back(
-				new RolloSchalter(14, 17, 12, 16, "Jayde"));
+				new RolloSchalter(14, 17, 12, 16,600, 1830, "Jayde"));
 		raum = new Raum("Arbeitszimmer");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(27, 15, "AZ"));
-		raum->vecSchaltern.push_back(new RolloSchalter(26, 0, 25, 2, "AZ"));
+		raum->vecSchaltern.push_back(new RolloSchalter(26, 0, 25, 2, 600, 1830, "AZ"));
 		raum = new Raum("Elternzimmer");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(33, 5, "EZ"));
-		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 32, 18, "EZ"));
+		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 32, 18,530, 1830, "EZ"));
 	}					   //4610366690621131300 247728676
 
 	if ((chipidLow == 20500)) { // module 2
@@ -78,12 +78,12 @@ void setup() {
 		raum->vecSchaltern.push_back(new LichtSchalter(12, 2, "Fenster"));
 		raum->vecSchaltern.push_back(new LichtSchalter(14, 0, "Küche"));
 		raum->vecSchaltern.push_back(
-				new RolloSchalter(26, 4, 27, 16, "Fenster"));
-		raum->vecSchaltern.push_back(new RolloSchalter(25, 17, 33, 5, "Tür"));
+				new RolloSchalter(26, 4, 27, 16, 530, 1830, "Fenster"));
+		raum->vecSchaltern.push_back(new RolloSchalter(25, 17, 33, 5, 530, 1830, "Tür"));
 		raum = new Raum("Gang");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new AutoLichtSchalter(32, 18, "Gang"));
-		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 23, 21, "Gang"));
+		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 23, 21, 530, 1830, "Gang"));
 	}
 	if ((chipidLow == 21614)) { // module 3
 			ESP_LOGI(TAG, "module3 init");
@@ -164,7 +164,7 @@ void PutInfo(WiFiClient& client) {
 	client.print(TOSTRING(HTML_INFO));
 	client.print("<table>");
 	char buffer[500];
-	snprintf(buffer, 500, "<tr><th>Sonnenaufgang</th><td>%02d:%02d</td>",
+	/*snprintf(buffer, 500, "<tr><th>Sonnenaufgang</th><td>%02d:%02d</td>",
 			(daten.SonnenAufGangSek / 3600),
 			(daten.SonnenAufGangSek % 3600) / 60);
 	client.print(buffer);
@@ -177,12 +177,12 @@ void PutInfo(WiFiClient& client) {
 	client.print(buffer);
 	snprintf(buffer, 500, "<th>Windgeschwindigkeit Max</th><td>%d</td></tr>",
 			(daten.WindGeschwindigkeitMax));
-	client.print(buffer);
+	client.print(buffer);*/
 	time_t now = hmMillis() / 1000;
 	struct tm* ti = gmtime(&now);
 	client.print("");
 	snprintf(buffer, 500,
-			"<th>Time since restart</th><td>%d Tage %02d:%02d:%02d</td>",
+			"<tr><th>Time since restart</th><td>%d Tage %02d:%02d:%02d</td>",
 			ti->tm_yday, ti->tm_hour, ti->tm_min, ti->tm_sec);
 	client.print(buffer);
 	client.print("<th>Local Time</th><td>");
@@ -193,7 +193,7 @@ void PutInfo(WiFiClient& client) {
 
 	for (auto itrRaum : vecRaum) {
 		for (auto itr : itrRaum->vecSchaltern) {
-			if (itr->Putinfo(buffer, 100)) {
+			if (itr->Putinfo(buffer, 500)) {
 				client.print(buffer);
 			}
 		}

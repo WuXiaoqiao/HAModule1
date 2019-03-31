@@ -46,10 +46,8 @@ public:
 	}
 	virtual void an() {
 	}
-	;
 	virtual void aus() {
 	}
-	;
 	virtual void ProcessCommand(std::string cmd, WiFiClient& client)=0;
 	virtual void PutOperations(WiFiClient& client, const String& requestHost) {
 		for (auto itrStr : operationen) {
@@ -96,7 +94,7 @@ public:
 class RolloSchalter: public Schalter {
 public:
 	RolloSchalter(uint8_t inAuf, uint8_t outAuf, uint8_t inAb, uint8_t outAb,
-			std::string bezeichnung);
+			int auto_rauffahren, int auto_runterfahren, std::string bezeichnung);
 	virtual ~RolloSchalter();
 	void CheckIO();
 	void Switch();
@@ -108,6 +106,8 @@ public:
 	Kanal SchalterAb;
 	int64_t autoCheck;
 protected:
+	int auto_rauffahren;
+	int auto_runterfahren;
 	void ganz_auf();
 	void ganz_zu();
 	void auf(bool autoOff = false);
