@@ -59,15 +59,15 @@ void setup() {
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(13, 4, "Jayde"));
 		raum->vecSchaltern.push_back(
-				new RolloSchalter(14, 17, 12, 16,600, 1830, "Jayde"));
+				new RolloSchalter(14, 17, 12, 16,600, 2000, "Jayde"));
 		raum = new Raum("Arbeitszimmer");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(27, 15, "AZ"));
-		raum->vecSchaltern.push_back(new RolloSchalter(26, 0, 25, 2, 600, 1830, "AZ"));
+		raum->vecSchaltern.push_back(new RolloSchalter(26, 0, 25, 2, 600, 2000, "AZ"));
 		raum = new Raum("Elternzimmer");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(33, 5, "EZ"));
-		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 32, 18,530, 1830, "EZ"));
+		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 32, 18,530, 2000, "EZ"));
 	}					   //4610366690621131300 247728676
 
 	if ((chipidLow == 20500)) { // module 2
@@ -78,12 +78,12 @@ void setup() {
 		raum->vecSchaltern.push_back(new LichtSchalter(12, 2, "Fenster"));
 		raum->vecSchaltern.push_back(new LichtSchalter(14, 0, "Küche"));
 		raum->vecSchaltern.push_back(
-				new RolloSchalter(26, 4, 27, 16, 530, 1830, "Fenster"));
-		raum->vecSchaltern.push_back(new RolloSchalter(25, 17, 33, 5, 530, 1830, "Tür"));
+				new RolloSchalter(26, 4, 27, 16, 530, 2000, "Fenster"));
+		raum->vecSchaltern.push_back(new RolloSchalter(25, 17, 33, 5, 530, 2000, "Tür"));
 		raum = new Raum("Gang");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new AutoLichtSchalter(32, 18, "Gang"));
-		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 23, 21, 530, 1830, "Gang"));
+		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 23, 21, 530, 2000, "Gang"));
 	}
 	if ((chipidLow == 21614)) { // module 3
 			ESP_LOGI(TAG, "module3 init");

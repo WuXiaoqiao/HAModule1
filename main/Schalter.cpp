@@ -244,7 +244,7 @@ RolloSchalter::RolloSchalter(uint8_t inAuf, uint8_t outAuf, uint8_t inAb,
 	this->auto_rauffahren = (auto_rauffahren / 100) * 3600
 			+ (auto_rauffahren % 100) * 60;
 	this->auto_runterfahren = (auto_runterfahren / 100) * 3600
-			+ (auto_rauffahren % 100) * 60;
+			+ (auto_runterfahren % 100) * 60;
 }
 
 RolloSchalter::~RolloSchalter() {
