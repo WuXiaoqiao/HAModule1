@@ -16,9 +16,6 @@
 
 #define TAG "Schalter"
 
-#define DEFAULTZUMACHZEIT auto_runterfahren/3600,(auto_runterfahren%3600)/60,0
-#define DEFAULTAUFMACHZEIT this->auto_rauffahren/3600,(this->auto_rauffahren%3600)/60,0
-
 extern WetterDaten daten;
 extern std::vector<Raum*> vecRaum;
 extern String requestHost;
@@ -241,10 +238,13 @@ RolloSchalter::RolloSchalter(uint8_t inAuf, uint8_t outAuf, uint8_t inAb,
 	operationen.push_back(std::make_pair("auf", new std::string(buffer)));
 	snprintf(buffer, 512, TOSTRING(ARROW_DOWN), anfangBuchstabe);
 	operationen.push_back(std::make_pair("zu", new std::string(buffer)));
-	this->auto_rauffahren = (auto_rauffahren / 100) * 3600
-			+ (auto_rauffahren % 100) * 60;
-	this->auto_runterfahren = (auto_runterfahren / 100) * 3600
-			+ (auto_runterfahren % 100) * 60;
+	//operationen.push_back(std::make_pair("SetConfigValue", new std::string("S")));
+	for (int i = 0; i < 7; i++) {
+		this->auto_rauffahren[i] = (auto_rauffahren / 100) * 3600
+				+ (auto_rauffahren % 100) * 60;
+		this->auto_runterfahren[i] = (auto_runterfahren / 100) * 3600
+				+ (auto_runterfahren % 100) * 60;
+	}
 }
 
 RolloSchalter::~RolloSchalter() {
@@ -290,26 +290,19 @@ void RolloSchalter::CheckIO() {
 		ESP_LOGI(TAG,
 				"SchalterAuf autoOn firering %s, autoon: %lld, hmMillis: %lld",
 				bezeichnung.c_str(), SchalterAuf.autoOn, hmMillis());
-		tm time = GetTime();
 		ganz_auf();
-		SchalterAuf.autoOn = GetNextAutoTime(DEFAULTAUFMACHZEIT);
-		if (time.tm_wday >= 4) {
-			SchalterAuf.autoOn += 3600000;
-			ESP_LOGI(TAG,
-					"Auto FR SA SO Schalter: %s, autoon: %lld, hmMillis: %lld",
-					bezeichnung.c_str(), SchalterAuf.autoOn, hmMillis());
-		}
+		SchalterAuf.autoOn = this->GetNextAutoTimeAuf();
 	}
 	if (SchalterAb.autoOn < hmMillis()) {
 		if (SomeOneAtHome()) {
 			ESP_LOGI(TAG, "SchalterAb autoOn firering %s", bezeichnung.c_str());
 			ganz_zu();
-			SchalterAb.autoOn = GetNextAutoTime(DEFAULTZUMACHZEIT);
+			SchalterAb.autoOn = this->GetNextAutoTimeAb();
 			SchalterAuf.retry = 8;
 		} else {
 			SchalterAuf.retry--;
 			if (SchalterAuf.retry < 0) {
-				SchalterAb.autoOn = GetNextAutoTime(DEFAULTZUMACHZEIT);
+				SchalterAb.autoOn = this->GetNextAutoTimeAb();
 				SchalterAuf.retry = 8;
 				ESP_LOGI(TAG,
 						"SchalterAb autoOn niemand zuhause auf nüchsten tag verschoben %s, SchalterAuf.autoOn: %lld, SchalterAb.autoOn: %lld",
@@ -359,14 +352,21 @@ void RolloSchalter::Switch() {
 void RolloSchalter::Init() {
 	SchalterAuf.Init();
 	SchalterAb.Init();
-	SchalterAuf.autoOn = GetNextAutoTime(DEFAULTAUFMACHZEIT);
-	tm time = GetTime();
-	if (time.tm_wday >= 5) {
-		SchalterAuf.autoOn += 3600000;
-	}
-	SchalterAb.autoOn = GetNextAutoTime(DEFAULTZUMACHZEIT);
+	SchalterAuf.autoOn = this->GetNextAutoTimeAuf();
+	SchalterAb.autoOn = this->GetNextAutoTimeAb();
 	SchalterAuf.retry = 8;
 	ESP_LOGI(TAG, "Schalter Init: %s UP: %lld down: %lld", bezeichnung.c_str(), SchalterAuf.autoOn/1000, SchalterAb.autoOn/1000);
+}
+
+int64_t RolloSchalter::GetNextAutoTimeAuf() {
+	struct tm ti = GetTime();
+	return GetNextAutoTime(auto_rauffahren[ti.tm_wday] / 3600,
+			(auto_rauffahren[ti.tm_wday] % 3600) / 60, 0);
+}
+int64_t RolloSchalter::GetNextAutoTimeAb() {
+	struct tm ti = GetTime();
+	return GetNextAutoTime(auto_runterfahren[ti.tm_wday] / 3600,
+			(auto_runterfahren[ti.tm_wday] % 3600) / 60, 0);
 }
 
 void RolloSchalter::ganz_auf() {
@@ -435,19 +435,98 @@ void RolloSchalter::ProcessCommand(std::string cmd, WiFiClient& client) {
 	if (cmd == "zu") {
 		zu(true);
 	}
-	client.print(TOSTRING(RESPONSE_HEADER));
+	String currenNr = "";
+	if (cmd == "SETCONFIG_AUF") {
+		int i = 0;
+		int stunde = 0;
+		int minute = 0;
+		while (client.connected() && client.available()) { // loop while the client's connected
+			char c = client.read();
+			if (c == '?') {
+				i = client.read() - '0';
+			} else if (c == '&') {
+				minute = atoi(currenNr.c_str());
+				currenNr = "";
+				if (i >= 0 && i < 7) {
+					auto_rauffahren[i] = stunde * 3600 + minute * 60;
+				}
+				i = client.read() - '0';
+			} else if (c == '=') {
+				currenNr = "";
+			} else if (c == '%') {
+				c = client.read();
+				c = client.read();
+				stunde = atoi(currenNr.c_str());
+				currenNr = "";
+			} else {
+				currenNr += c;
+			}
+		}
+		if (i >= 0 && i < 7) {
+			auto_rauffahren[i] = stunde * 3600 + minute * 60;
+		}
+	}
+	if (cmd == "SETCONFIG_ZU") {
+		int i = 0;
+		int stunde = 0;
+		int minute = 0;
+		while (client.connected() && client.available()) { // loop while the client's connected
+			char c = client.read() - '0';
+			if (c == '?') {
+				i = client.read();
+			} else if (c == '&') {
+				minute = atoi(currenNr.c_str());
+				currenNr = "";
+				if (i >= 0 && i < 7) {
+					auto_runterfahren[i] = stunde * 3600 + minute * 60;
+				}
+				i = client.read() - '0';
+			} else if (c == '=') {
+				currenNr = "";
+			} else if (c == '%') {
+				c = client.read();
+				stunde = atoi(currenNr.c_str());
+				currenNr = "";
+			} else {
+				currenNr += c;
+			}
+		}
+		if (i >= 0 && i < 7) {
+			auto_runterfahren[i] = stunde * 3600 + minute * 60;
+		}
+	}
+	client.print(TOSTRING(RESPONSE_REDIRECT));
 	client.flush();
+}
+
+void RolloSchalter::PutSettings(WiFiClient& client, const String& requestHost) {
+	client.printf(TOSTRING(HTML_ROLLO_SETTING_FORM_BEGIN), "Auf",
+			requestHost.c_str(), (int) &(bezeichnung), "SETCONFIG_AUF");
+	for (int i = 0; i < 7; i++) {
+		client.printf(TOSTRING(SETTING_INPUT_FIELD), i, i,
+				auto_rauffahren[i] / 3600, (auto_rauffahren[i] / 60) % 60);
+	}
+	client.printf(TOSTRING(HTML_ROLLO_SETTING_FORM_END));
+
+	client.printf(TOSTRING(HTML_ROLLO_SETTING_FORM_BEGIN), "Zu",
+			requestHost.c_str(), (int) &(bezeichnung), "SETCONFIG_ZU");
+	for (int i = 0; i < 7; i++) {
+		client.printf(TOSTRING(SETTING_INPUT_FIELD), i, i,
+				auto_runterfahren[i] / 3600, (auto_runterfahren[i] / 60) % 60);
+	}
+	client.printf(TOSTRING(HTML_ROLLO_SETTING_FORM_END));
 }
 
 bool RolloSchalter::Putinfo(char* buffer, int Size) {
 	int64_t auf = (SchalterAuf.autoOn - hmMillis()) / 1000;
 	int64_t zu = (SchalterAb.autoOn - hmMillis()) / 1000;
+	struct tm ti = GetTime();
 	snprintf(buffer, Size,
 			"<tr><th>%s</th><td>auto up in %02lld:%02lld:%02lld sek </td><td>auto down in %02lld:%02lld:%02lld sek </td></tr><tr><th>%s</th><td>Auto auf Zeit: %02d:%02d </td><td>Auto down Zeit: %02d:%02d </td></tr>",
 			bezeichnung.c_str(), auf / 3600, (auf / 60) % 60, auf % 60,
 			zu / 3600, (zu / 60) % 60, zu % 60, bezeichnung.c_str(),
-			auto_rauffahren / 3600, (auto_rauffahren / 60) % 60,
-			auto_runterfahren / 3600, (auto_runterfahren /60) % 60);
+			auto_rauffahren[ti.tm_wday] / 3600, (auto_rauffahren[ti.tm_wday] / 60) % 60,
+			auto_runterfahren[ti.tm_wday] / 3600, (auto_runterfahren[ti.tm_wday] / 60) % 60);
 	return true;
 }
 

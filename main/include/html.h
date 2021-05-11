@@ -13,6 +13,8 @@
 
 #define RESPONSE_HEADER HTTP/1.1 200 OK\r\nContent-type:text/html;charset=utf-8\r\nAccess-Control-Allow-Origin: *\r\n\r\n
 
+#define RESPONSE_REDIRECT  HTTP/1.1 302 Moved Temporary\r\nlocation: /
+
 #define HTML_HEAD_TOP <html><head>\
 	<script>\
 		function execOperation(path, element) {\
@@ -34,6 +36,18 @@
 				}\
 			};\
 			xhttp.open("GET", "http://"+path+"/GET_OPERATIONS/", true);\
+			xhttp.send();\
+		}\
+        function GetSettings(path) {\
+			var xhttp = new XMLHttpRequest();\
+			xhttp.onreadystatechange=function() {\
+				if (this.readyState == 4 && this.status == 200) {\
+					document.getElementById("innhalt").innerHTML =\
+					this.responseText;\
+					console.log(this.responseText);\
+				}\
+			};\
+			xhttp.open("GET", "http://"+path+"/GET_SETTINGS/", true);\
 			xhttp.send();\
 		}\
 		function tuerAufHaupt() {\
@@ -84,6 +98,11 @@
 		div.tab button.active {\
 			background-color: #ccc;\
 		}\
+		.pfloat {float: left;\
+			font-size: 1em;\
+			position: relative;\
+			width:4em;\
+		}\
 	</style>\
 	</head>\
 		<body>
@@ -95,8 +114,18 @@
 				<button class="t1" onclick="GlobalOP('an')">Licht an</button>\
 				<button class="t2" onclick="GlobalOP('aus')">Licht aus</button>\
 				<button class="t2" onclick="GetOperation('%s')">Tür Funktionen</button>\
+				<button class="t1" onclick="GetSettings('%s')">Einstellungen</button>\
 			</div>\
 			<div id = "innhalt">
+#define SETTING_INPUT_FIELD <div class ="pfloat">%d</div>\
+  <input class ="pfloat" type="text" name="%d" value= "%02d:%02d" maxlength="5" size="5" />
+
+#define	 HTML_ROLLO_SETTING_FORM_BEGIN <div>%s</div>\
+										<form action="http://%s/%d/%s/" method="get"><div>
+
+
+#define	 HTML_ROLLO_SETTING_FORM_END </div><input style="float:center;width:100%%;font-size: 1.5em;"\
+									 type="submit" value="Anwenden" /> </form>
 
 #define HTML_INFO </div><div id = "info">
 

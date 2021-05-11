@@ -58,7 +58,9 @@ public:
 					itrStr.first.c_str(), itrStr.second->c_str());
 		}
 	}
-	static int64_t GetNextAutoTime(uint8_t hour, uint8_t min, uint8_t sec);
+	virtual void PutSettings(WiFiClient& client, const String& requestHost) {
+	}
+	virtual int64_t GetNextAutoTime(uint8_t hour, uint8_t min, uint8_t sec);
 	virtual bool Putinfo(char* buffer, int Size) {
 		return false;
 	}
@@ -94,20 +96,24 @@ public:
 class RolloSchalter: public Schalter {
 public:
 	RolloSchalter(uint8_t inAuf, uint8_t outAuf, uint8_t inAb, uint8_t outAb,
-			int auto_rauffahren, int auto_runterfahren, std::string bezeichnung);
+			int auto_rauffahren, int auto_runterfahren,
+			std::string bezeichnung);
 	virtual ~RolloSchalter();
 	void CheckIO();
 	void Switch();
 	void Init();
 	void ProcessCommand(std::string cmd, WiFiClient& client);
 	virtual bool Putinfo(char* buffer, int Size);
+	virtual void PutSettings(WiFiClient& client, const String& requestHost);
+	virtual int64_t GetNextAutoTimeAuf();
+	virtual int64_t GetNextAutoTimeAb();
 //protected:
 	Kanal SchalterAuf;
 	Kanal SchalterAb;
 	int64_t autoCheck;
 protected:
-	int auto_rauffahren;
-	int auto_runterfahren;
+	int auto_rauffahren[7] = {LONG_MAX,LONG_MAX,LONG_MAX,LONG_MAX,LONG_MAX,LONG_MAX,LONG_MAX};
+	int auto_runterfahren[7] = {LONG_MAX,LONG_MAX,LONG_MAX,LONG_MAX,LONG_MAX,LONG_MAX,LONG_MAX};
 	void ganz_auf();
 	void ganz_zu();
 	void auf(bool autoOff = false);
@@ -144,11 +150,19 @@ public:
 			itr->Init();
 		}
 	}
-	void PutOperations(WiFiClient& client, const String& requestHost){
+	void PutOperations(WiFiClient& client, const String& requestHost) {
 		client.printf("<p>");
 		client.printf("<div>%s</div>", bezeichnung.c_str());
 		for (auto itr : vecSchaltern) {
 			itr->PutOperations(client, requestHost);
+		}
+		client.printf("</p>");
+	}
+	void PutSettings(WiFiClient& client, const String& requestHost) {
+		client.printf("<p>");
+		client.printf("<div>%s</div>", bezeichnung.c_str());
+		for (auto itr : vecSchaltern) {
+			itr->PutSettings(client, requestHost);
 		}
 		client.printf("</p>");
 	}

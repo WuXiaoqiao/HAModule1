@@ -38,7 +38,7 @@ WiFiServer server(80);
 // connect to UDP returns true if successful or false if not
 void ws_server(void *pvParameters);
 bool inited = false;
-bool TIME_OBTAINED =false;
+bool TIME_OBTAINED = false;
 int64_t lastCheck;
 WetterDaten daten;
 String requestHost;
@@ -50,24 +50,26 @@ void setup() {
 	ESP_LOGI(TAG, "ESP32 Chip ID = %04X", (uint16_t )(chipid >> 32)); //print High 2 bytes
 	ESP_LOGI(TAG, "%08X", (uint32_t )chipid); //print Low 4bytes.
 	uint32_t chipidLow = (chipid >> 32) % 65536;
-	ESP_LOGI(TAG, "%d", chipidLow);
+	ESP_LOGI(TAG, "chipidLow %d", chipidLow);
 	Raum* raum;
 
-	if ((chipidLow == 15363) || (chipidLow == 27787)) { // module 1
+	if ((chipidLow == 15363) || (chipidLow == 54686) || (chipidLow == 31852)) { // module 1
 		ESP_LOGI(TAG, "module 1 init");
 		raum = new Raum("Zimmer Jayde");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(13, 4, "Jayde"));
 		raum->vecSchaltern.push_back(
-				new RolloSchalter(14, 17, 12, 16,600, 2000, "Jayde"));
+				new RolloSchalter(14, 17, 12, 16, 600, 2000, "Jayde"));
 		raum = new Raum("Arbeitszimmer");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(27, 15, "AZ"));
-		raum->vecSchaltern.push_back(new RolloSchalter(26, 0, 25, 2, 600, 2000, "AZ"));
+		raum->vecSchaltern.push_back(
+				new RolloSchalter(26, 0, 25, 2, 600, 2000, "AZ"));
 		raum = new Raum("Elternzimmer");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new LichtSchalter(33, 5, "EZ"));
-		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 32, 18,530, 2000, "EZ"));
+		raum->vecSchaltern.push_back(
+				new RolloSchalter(22, 19, 32, 18, 530, 2000, "EZ"));
 	}					   //4610366690621131300 247728676
 
 	if ((chipidLow == 20500)) { // module 2
@@ -78,22 +80,24 @@ void setup() {
 		raum->vecSchaltern.push_back(new LichtSchalter(12, 2, "Fenster"));
 		raum->vecSchaltern.push_back(new LichtSchalter(14, 0, "Küche"));
 		raum->vecSchaltern.push_back(
-				new RolloSchalter(26, 4, 27, 16, 530, 2000, "Fenster"));
-		raum->vecSchaltern.push_back(new RolloSchalter(25, 17, 33, 5, 530, 2000, "Tür"));
+				new RolloSchalter(26, 4, 27, 16, 500, 2000, "Fenster"));
+		raum->vecSchaltern.push_back(
+				new RolloSchalter(25, 17, 33, 5, 500, 2000, "Tür"));
 		raum = new Raum("Gang");
 		vecRaum.push_back(raum);
 		raum->vecSchaltern.push_back(new AutoLichtSchalter(32, 18, "Gang"));
-		raum->vecSchaltern.push_back(new RolloSchalter(22, 19, 23, 21, 530, 2000, "Gang"));
+		raum->vecSchaltern.push_back(
+				new RolloSchalter(22, 19, 23, 21, 500, 2000, "Gang"));
 	}
 	if ((chipidLow == 21614)) { // module 3
-			ESP_LOGI(TAG, "module3 init");
-			raum = new Raum("Haupteingang");
-			vecRaum.push_back(raum);
-			raum->vecSchaltern.push_back(new TasterSchalter(13, 4, "Tür"));
-			raum = new Raum("Wohnung");
-			vecRaum.push_back(raum);
-			raum->vecSchaltern.push_back(new LichtSchalter(13, 15, "Tür"));
-		}
+		ESP_LOGI(TAG, "module3 init");
+		raum = new Raum("Haupteingang");
+		vecRaum.push_back(raum);
+		raum->vecSchaltern.push_back(new TasterSchalter(13, 4, "Tür"));
+		raum = new Raum("Wohnung");
+		vecRaum.push_back(raum);
+		raum->vecSchaltern.push_back(new LichtSchalter(13, 15, "Tür"));
+	}
 	raum = new Raum("Global");
 	pGlobalSchalter = new GlobalSchalter();
 	raum->vecSchaltern.push_back(pGlobalSchalter);
@@ -128,6 +132,9 @@ void loop() {
 		if (!TIME_OBTAINED) {
 			obtain_time();
 			TIME_OBTAINED = true;
+			for (auto itr : vecRaum) {
+				itr->Init();
+			}
 		}
 		//daten.Check();
 	}
@@ -160,24 +167,16 @@ void PutOperations(WiFiClient& client) {
 	}
 }
 
+void PutSettings(WiFiClient& client) {
+	for (auto itrRaum : vecRaum) {
+		itrRaum->PutSettings(client, requestHost);
+	}
+}
+
 void PutInfo(WiFiClient& client) {
 	client.print(TOSTRING(HTML_INFO));
 	client.print("<table>");
 	char buffer[500];
-	/*snprintf(buffer, 500, "<tr><th>Sonnenaufgang</th><td>%02d:%02d</td>",
-			(daten.SonnenAufGangSek / 3600),
-			(daten.SonnenAufGangSek % 3600) / 60);
-	client.print(buffer);
-	snprintf(buffer, 500, "<th>Sonnenuntergang</th><td>%02d:%02d</td></tr>",
-			(daten.SonnenUnterGangSek / 3600),
-			(daten.SonnenUnterGangSek % 3600) / 60);
-	client.print(buffer);
-	snprintf(buffer, 500, "<tr><th>Windgeschwindigkeit</th><td>%d</td>",
-			(daten.WindGeschwindigkeit));
-	client.print(buffer);
-	snprintf(buffer, 500, "<th>Windgeschwindigkeit Max</th><td>%d</td></tr>",
-			(daten.WindGeschwindigkeitMax));
-	client.print(buffer);*/
 	time_t now = hmMillis() / 1000;
 	struct tm* ti = gmtime(&now);
 	client.print("");
@@ -268,13 +267,15 @@ void ws_server(void *pvParameters) {
 									ip3 = "localhost:105";
 								}
 
-								snprintf(buffer,1024,TOSTRING(HTML_HEAD_CENTER),
-										ip1.c_str(), ip2.c_str());
+								snprintf(buffer, 1024,
+										TOSTRING(HTML_HEAD_CENTER), ip1.c_str(),
+										ip2.c_str());
 
 								client.print(buffer);
 								client.print(TOSTRING(HTML_HEAD_BOTTOM));
-								snprintf(buffer,1024, TOSTRING(HTML_BODY),
-										ip1.c_str(), ip2.c_str(), ip3.c_str());
+								snprintf(buffer, 1024, TOSTRING(HTML_BODY),
+										ip1.c_str(), ip2.c_str(), ip3.c_str(),
+										requestHost.c_str());
 
 								client.print(buffer);
 								PutInfo(client);
@@ -310,6 +311,13 @@ void ws_server(void *pvParameters) {
 								if (currentLine == "GET_OPERATIONS") {
 									client.print(TOSTRING(RESPONSE_HEADER));
 									PutOperations(client);
+									client.println();
+									client.flush();
+									// break out of the while loop:
+									break;
+								} else if (currentLine == "GET_SETTINGS") {
+									client.print(TOSTRING(RESPONSE_HEADER));
+									PutSettings(client);
 									client.println();
 									client.flush();
 									// break out of the while loop:
